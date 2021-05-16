@@ -1,7 +1,18 @@
-FROM        quay.io/prometheus/busybox:latest
-MAINTAINER  Daniel Qian <qsj.daniel@gmail.com>
+FROM golang:1.16-alpine AS build
 
-COPY kafka_exporter /bin/kafka_exporter
+WORKDIR /app
 
-EXPOSE     9308
+COPY . /app
+
+RUN apk add upx --upgrade \
+  && go build -ldflags="-s -w" \
+  && upx kafka_exporter
+
+
+FROM alpine
+
+COPY --from=build /app/kafka_exporter /bin/kafka_exporter
+
+EXPOSE 9308
+
 ENTRYPOINT [ "/bin/kafka_exporter" ]
